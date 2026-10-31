@@ -28,28 +28,6 @@ body{
 .page.active{
   display:block;
 }
-#storyPage{
-  display:none;
-  height:100vh;
-  /* 上半区最大强制屏幕高度一半50vh；空间不足自动收缩，杜绝立绘压进对话框 */
-  grid-template-rows: minmax(0, 50vh) auto;
-  grid-template-columns:100%;
-}
-#storyPage.page.active{
-  display:grid;
-}
-.story‑upper‑area{
-  position:relative;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-}
-.story‑lower‑area{
-  position:relative;
-  width:100%;
-  /* 边距放在外层容器，不挤占grid行高度 */
-  padding:0 20px 20px 20px;
-}
 .tip{
   text-align:center;
   color:#666;
@@ -76,30 +54,22 @@ button{
   -webkit-tap-highlight-color: transparent;
 }
 button:active{background:#2857b0;}
-
-.character‑layer{
-  position:absolute;
+.character-layer{
+  position:fixed;
   left:0;
   top:0;
-  width:42vw;
-  height:100%;
+  width:46vw;
+  max-height: calc(100vh - 260px);
   z-index:5;
   pointer-events:none;
   overflow:hidden;
 }
-.character‑layer img{
-  position:absolute;
-  left:0;
-  top:0;
+.character-layer img{
   width:100%;
-  height:auto;
-  max-width:100%;
-  max-height:100%;
+  height:100%;
   object-fit:contain;
-  object-position:left top;
-  display:block;
+  object-position:left bottom;
 }
-
 #storyBox{
   background:rgba(245,245,245,0.12);
   padding:26px;
@@ -107,7 +77,12 @@ button:active{background:#2857b0;}
   min-height:240px;
   line-height:1.85;
   font-size:18px;
-  position:relative;
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  right:20px;
+  max-width:calc(1000px - 40px);
+  margin:0 auto;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(6px);
   box-shadow:0 4px 20px rgba(0,0,0,0.25);
@@ -124,20 +99,20 @@ button:active{background:#2857b0;}
   margin:12px 0;
   font-size:17px;
 }
-.choice‑area{
+.choice-area{
   margin-top:22px;
   display:flex;
   flex-direction:column;
   gap:12px;
 }
-.choice‑btn{
+.choice-btn{
   background:#e8edf7;
   color:#222;
   text-align:left;
   font-size:17px;
   padding:14px 16px;
 }
-.choice‑btn:active{background:#d0d9ec;}
+.choice-btn:active{background:#d0d9ec;}
 #nextBtn{
   position:absolute;
   bottom:calc(240px + 44px);
@@ -201,22 +176,22 @@ button:active{background:#2857b0;}
   font-size:14px;
   color:#888;
 }
-.restart‑btn{
+.restart-btn{
   background:#6b7280;
 }
-.restart‑btn:active{
+.restart-btn:active{
   background:#4b5563;
 }
-.import‑export‑btn{
+.import-export-btn{
   background:#279ed8;
 }
-.import‑export‑btn:active{
+.import-export-btn:active{
   background:#1b7cae;
 }
-.file‑input{
+.file-input{
   display:none;
 }
-select.lang‑select{
+select.lang-select{
   font-size:17px;
   padding:10px 12px;
   border-radius:8px;
@@ -230,13 +205,13 @@ select.lang‑select{
 <div id="exitFullWrap">
   <button id="exitFullBtn" onclick="exitFull()" data-ui-key="btnExitFull"></button>
 </div>
-
+<div class="character-layer" id="charLayer"></div>
 <div id="menuPage" class="page active">
   <h1 data-ui-key="title"></h1>
   <div class="tip" data-ui-key="tipRotate"></div>
   <div class="btns">
     <label data-ui-key="langLabel"></label>
-    <select id="langSelect" class="lang‑select" onchange="onLangSelectChange(this.value)">
+    <select id="langSelect" class="lang-select" onchange="onLangSelectChange(this.value)">
       <option value="zh" data-ui-key="langZh"></option>
       <option value="en" data-ui-key="langEn"></option>
       <option value="ja" data-ui-key="langJa"></option>
@@ -246,35 +221,29 @@ select.lang‑select{
     <button id="fullBtn" onclick="toggleFull()" data-ui-key="btnFull"></button>
     <button id="clearSaveBtn" onclick="clearSave()" data-ui-key="btnClearSave"></button>
   </div>
+  <!-- 自动渲染幕按钮容器，HTML永远不需要修改 -->
   <div class="btns" id="continueBtnWrap"></div>
   <div class="btns" id="restartBtnWrap"></div>
   <div class="btns">
     <button onclick="resumeScene()" data-ui-key="btnResume"></button>
   </div>
   <div class="btns">
-    <button class="import‑export‑btn" onclick="exportSave()" data-ui-key="btnExport"></button>
-    <button class="import‑export‑btn" onclick="document.getElementById('saveImport').click()" data-ui-key="btnImport"></button>
-    <input class="file‑input" type="file" id="saveImport" accept=".txt" onchange="importSave(this)">
-    <button class="import‑export‑btn" onclick="document.getElementById('zipUpload').click()" data-ui-key="btnLoadZip"></button>
-    <input class="file‑input" type="file" id="zipUpload" accept=".zip" onchange="loadResourceZip(this)">
+    <button class="import-export-btn" onclick="exportSave()" data-ui-key="btnExport"></button>
+    <button class="import-export-btn" onclick="document.getElementById('saveImport').click()" data-ui-key="btnImport"></button>
+    <input class="file-input" type="file" id="saveImport" accept=".txt" onchange="importSave(this)">
+    <button class="import-export-btn" onclick="document.getElementById('zipUpload').click()" data-ui-key="btnLoadZip"></button>
+    <input class="file-input" type="file" id="zipUpload" accept=".zip" onchange="loadResourceZip(this)">
   </div>
   <div class="tip" id="saveTip"></div>
   <div class="copyright" data-ui-key="copyright"></div>
 </div>
-
 <div id="storyPage" class="page">
-  <div class="story‑upper‑area">
-    <button id="bgmPlayBtn" onclick="triggerBGMPlay()" style="display:none;" data-ui-key="btnBgm"></button>
-    <div class="character‑layer" id="charLayer"></div>
-  </div>
-  <div class="story‑lower‑area">
-    <button id="nextBtn" onclick="next()" style="display:none;" data-ui-key="btnNext"></button>
-    <div id="storyBox"></div>
-    <button id="exitBtn" onclick="exitStory()" data-ui-key="btnExitStory"></button>
-    <div class="copyright" data-ui-key="copyright"></div>
-  </div>
+  <button id="bgmPlayBtn" onclick="triggerBGMPlay()" style="display:none;" data-ui-key="btnBgm"></button>
+  <button id="nextBtn" onclick="next()" style="display:none;" data-ui-key="btnNext"></button>
+  <div id="storyBox"></div>
+  <button id="exitBtn" onclick="exitStory()" data-ui-key="btnExitStory"></button>
+  <div class="copyright" data-ui-key="copyright"></div>
 </div>
-
 <script>
 const uiLocale = {
   zh:{
@@ -415,7 +384,7 @@ function renderSceneButtons(){
     continueWrap.appendChild(btnContinue);
 
     const btnRestart = document.createElement("button");
-    btnRestart.className = "restart‑btn";
+    btnRestart.className = "restart-btn";
     btnRestart.textContent = `${titleText}${dict.suffixRestart}`;
     btnRestart.onclick = ()=> startSceneFromBegin(sid);
     restartWrap.appendChild(btnRestart);
@@ -567,8 +536,8 @@ function initBgLayer(){
   bgLayer.style.zIndex = "-1";
   bgLayer.style.backgroundSize = "cover";
   bgLayer.style.backgroundPosition = "center";
-  bgLayer.style.backgroundRepeat = "no‑repeat";
-  bgLayer.style.transition = "background‑image 0.3s ease";
+  bgLayer.style.backgroundRepeat = "no-repeat";
+  bgLayer.style.transition = "background-image 0.3s ease";
   document.body.appendChild(bgLayer);
 }
 function clearBgLayer(){
@@ -579,7 +548,6 @@ function clearBgLayer(){
 function clearCharacterImage(){
   charLayerDom.innerHTML = "";
 }
-
 function getCharUrlBySpeaker(item){
   if(!resourcePack.loaded) return null;
   if(item.charKey){
@@ -596,12 +564,9 @@ function setCharacter(item){
   if(!filePath) return;
   const imgUrl = resourcePack.files[filePath];
   if(!imgUrl) return;
-
   const img = new Image();
   img.src = imgUrl;
-  img.onload = ()=>{
-    charLayerDom.appendChild(img);
-  };
+  charLayerDom.appendChild(img);
 }
 function getVoiceUrlByIndex(idx){
   if(!resourcePack.loaded) return null;
@@ -669,17 +634,14 @@ function startScene(id){
   }else{
     index = 0;
   }
-
   document.getElementById("menuPage").classList.remove("active");
   document.getElementById("storyPage").classList.add("active");
   initBgLayer();
   playSceneBGM(id);
-
   const bgUrl = getCurrentBgUrl();
   if(bgUrl){
     bgLayer.style.backgroundImage = `url(${bgUrl})`;
   }
-
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
@@ -688,17 +650,14 @@ function startSceneFromBegin(id){
   sceneId = id;
   sceneData = scenes[id];
   index = 0;
-
   document.getElementById("menuPage").classList.remove("active");
   document.getElementById("storyPage").classList.add("active");
   initBgLayer();
   playSceneBGM(id);
-
   const bgUrl = getCurrentBgUrl();
   if(bgUrl){
     bgLayer.style.backgroundImage = `url(${bgUrl})`;
   }
-
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
@@ -723,7 +682,6 @@ function exitStory(){
   document.getElementById("bgmPlayBtn").style.display = "none";
   clearBgLayer();
   clearCharacterImage();
-
   document.getElementById("storyPage").classList.remove("active");
   document.getElementById("menuPage").classList.add("active");
   loadProgress();
@@ -750,9 +708,9 @@ function render(){
     document.getElementById("nextBtn").style.display = "block";
     setCharacter(item);
   }else if(item.type === "choice"){
-    let html = `<div>${dict.textPleaseChoose}</div><div class="choice‑area">`;
+    let html = `<div>${dict.textPleaseChoose}</div><div class="choice-area">`;
     item.options.forEach(opt=>{
-      html += `<button class="choice‑btn" onclick="selectChoice('${opt.key}')">${opt.text}</button>`;
+      html += `<button class="choice-btn" onclick="selectChoice('${opt.key}')">${opt.text}</button>`;
     })
     html += `</div>`;
     box.innerHTML = html;
@@ -846,7 +804,7 @@ async function loadResourceZip(inputEl){
       const fontFace = new FontFace("CustomStoryFont", `url(${fontUrl})`);
       await fontFace.load();
       document.fonts.add(fontFace);
-      document.body.style.fontFamily = "CustomStoryFont, system‑ui, sans‑serif";
+      document.body.style.fontFamily = "CustomStoryFont, system-ui, sans‑serif";
     }
     alert(dict.tipZipSuccess.replace("{count}",allFileKeys.length));
   }catch(err){
