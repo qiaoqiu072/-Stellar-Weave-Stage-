@@ -28,6 +28,28 @@ body{
 .page.active{
   display:block;
 }
+#storyPage{
+  display:none;
+  height:100vh;
+  /* 上半区最大强制屏幕高度一半50vh；空间不足自动收缩，杜绝立绘压进对话框 */
+  grid-template-rows: minmax(0, 50vh) auto;
+  grid-template-columns:100%;
+}
+#storyPage.page.active{
+  display:grid;
+}
+.story‑upper‑area{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+.story‑lower‑area{
+  position:relative;
+  width:100%;
+  /* 边距放在外层容器，不挤占grid行高度 */
+  padding:0 20px 20px 20px;
+}
 .tip{
   text-align:center;
   color:#666;
@@ -55,23 +77,24 @@ button{
 }
 button:active{background:#2857b0;}
 
-.character-layer{
-  position:fixed;
+.character‑layer{
+  position:absolute;
   left:0;
   top:0;
   width:42vw;
+  height:100%;
   z-index:5;
   pointer-events:none;
   overflow:hidden;
 }
-.character-layer img{
+.character‑layer img{
   position:absolute;
   left:0;
   top:0;
   width:100%;
   height:auto;
-  min-height:80px;
-  max-height:70vh;
+  max-width:100%;
+  max-height:100%;
   object-fit:contain;
   object-position:left top;
   display:block;
@@ -84,12 +107,7 @@ button:active{background:#2857b0;}
   min-height:240px;
   line-height:1.85;
   font-size:18px;
-  position:absolute;
-  bottom:20px;
-  left:20px;
-  right:20px;
-  max-width:calc(1000px - 40px);
-  margin:0 auto;
+  position:relative;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(6px);
   box-shadow:0 4px 20px rgba(0,0,0,0.25);
@@ -106,20 +124,20 @@ button:active{background:#2857b0;}
   margin:12px 0;
   font-size:17px;
 }
-.choice-area{
+.choice‑area{
   margin-top:22px;
   display:flex;
   flex-direction:column;
   gap:12px;
 }
-.choice-btn{
+.choice‑btn{
   background:#e8edf7;
   color:#222;
   text-align:left;
   font-size:17px;
   padding:14px 16px;
 }
-.choice-btn:active{background:#d0d9ec;}
+.choice‑btn:active{background:#d0d9ec;}
 #nextBtn{
   position:absolute;
   bottom:calc(240px + 44px);
@@ -183,22 +201,22 @@ button:active{background:#2857b0;}
   font-size:14px;
   color:#888;
 }
-.restart-btn{
+.restart‑btn{
   background:#6b7280;
 }
-.restart-btn:active{
+.restart‑btn:active{
   background:#4b5563;
 }
-.import-export-btn{
+.import‑export‑btn{
   background:#279ed8;
 }
-.import-export-btn:active{
+.import‑export‑btn:active{
   background:#1b7cae;
 }
-.file-input{
+.file‑input{
   display:none;
 }
-select.lang-select{
+select.lang‑select{
   font-size:17px;
   padding:10px 12px;
   border-radius:8px;
@@ -212,13 +230,13 @@ select.lang-select{
 <div id="exitFullWrap">
   <button id="exitFullBtn" onclick="exitFull()" data-ui-key="btnExitFull"></button>
 </div>
-<div class="character-layer" id="charLayer"></div>
+
 <div id="menuPage" class="page active">
   <h1 data-ui-key="title"></h1>
   <div class="tip" data-ui-key="tipRotate"></div>
   <div class="btns">
     <label data-ui-key="langLabel"></label>
-    <select id="langSelect" class="lang-select" onchange="onLangSelectChange(this.value)">
+    <select id="langSelect" class="lang‑select" onchange="onLangSelectChange(this.value)">
       <option value="zh" data-ui-key="langZh"></option>
       <option value="en" data-ui-key="langEn"></option>
       <option value="ja" data-ui-key="langJa"></option>
@@ -228,29 +246,35 @@ select.lang-select{
     <button id="fullBtn" onclick="toggleFull()" data-ui-key="btnFull"></button>
     <button id="clearSaveBtn" onclick="clearSave()" data-ui-key="btnClearSave"></button>
   </div>
-  <!-- 自动渲染幕按钮容器，HTML永远不需要修改 -->
   <div class="btns" id="continueBtnWrap"></div>
   <div class="btns" id="restartBtnWrap"></div>
   <div class="btns">
     <button onclick="resumeScene()" data-ui-key="btnResume"></button>
   </div>
   <div class="btns">
-    <button class="import-export-btn" onclick="exportSave()" data-ui-key="btnExport"></button>
-    <button class="import-export-btn" onclick="document.getElementById('saveImport').click()" data-ui-key="btnImport"></button>
-    <input class="file-input" type="file" id="saveImport" accept=".txt" onchange="importSave(this)">
-    <button class="import-export-btn" onclick="document.getElementById('zipUpload').click()" data-ui-key="btnLoadZip"></button>
-    <input class="file-input" type="file" id="zipUpload" accept=".zip" onchange="loadResourceZip(this)">
+    <button class="import‑export‑btn" onclick="exportSave()" data-ui-key="btnExport"></button>
+    <button class="import‑export‑btn" onclick="document.getElementById('saveImport').click()" data-ui-key="btnImport"></button>
+    <input class="file‑input" type="file" id="saveImport" accept=".txt" onchange="importSave(this)">
+    <button class="import‑export‑btn" onclick="document.getElementById('zipUpload').click()" data-ui-key="btnLoadZip"></button>
+    <input class="file‑input" type="file" id="zipUpload" accept=".zip" onchange="loadResourceZip(this)">
   </div>
   <div class="tip" id="saveTip"></div>
   <div class="copyright" data-ui-key="copyright"></div>
 </div>
+
 <div id="storyPage" class="page">
-  <button id="bgmPlayBtn" onclick="triggerBGMPlay()" style="display:none;" data-ui-key="btnBgm"></button>
-  <button id="nextBtn" onclick="next()" style="display:none;" data-ui-key="btnNext"></button>
-  <div id="storyBox"></div>
-  <button id="exitBtn" onclick="exitStory()" data-ui-key="btnExitStory"></button>
-  <div class="copyright" data-ui-key="copyright"></div>
+  <div class="story‑upper‑area">
+    <button id="bgmPlayBtn" onclick="triggerBGMPlay()" style="display:none;" data-ui-key="btnBgm"></button>
+    <div class="character‑layer" id="charLayer"></div>
+  </div>
+  <div class="story‑lower‑area">
+    <button id="nextBtn" onclick="next()" style="display:none;" data-ui-key="btnNext"></button>
+    <div id="storyBox"></div>
+    <button id="exitBtn" onclick="exitStory()" data-ui-key="btnExitStory"></button>
+    <div class="copyright" data-ui-key="copyright"></div>
+  </div>
 </div>
+
 <script>
 const uiLocale = {
   zh:{
@@ -349,7 +373,6 @@ const uiLocale = {
 };
 let currentLang = "zh";
 let scenes = {};
-let characterLayoutTimer = null;
 
 function renderSceneButtons(){
   const continueWrap = document.getElementById("continueBtnWrap");
@@ -392,7 +415,7 @@ function renderSceneButtons(){
     continueWrap.appendChild(btnContinue);
 
     const btnRestart = document.createElement("button");
-    btnRestart.className = "restart-btn";
+    btnRestart.className = "restart‑btn";
     btnRestart.textContent = `${titleText}${dict.suffixRestart}`;
     btnRestart.onclick = ()=> startSceneFromBegin(sid);
     restartWrap.appendChild(btnRestart);
@@ -557,58 +580,6 @@ function clearCharacterImage(){
   charLayerDom.innerHTML = "";
 }
 
-function updateCharacterLayout(){
-  const box = document.getElementById("storyBox");
-  const layer = document.getElementById("charLayer");
-  if(!box || !layer) return;
-
-  if(!document.getElementById("storyPage").classList.contains("active")){
-    layer.style.height = "";
-    layer.style.width = "";
-    return;
-  }
-
-  const boxRect = box.getBoundingClientRect();
-  let layerHeight = Math.max(120, boxRect.top - 10);
-
-  if(window.innerWidth > window.innerHeight){
-    layerHeight = Math.min(layerHeight, window.innerHeight * 0.55);
-  }
-
-  layer.style.height = layerHeight + "px";
-  layer.style.width = "42vw";
-
-  const img = layer.querySelector("img");
-  if(img){
-    img.style.maxHeight = layerHeight + "px";
-    img.style.minHeight = "80px";
-    img.style.height = "auto";
-    img.style.width = "100%";
-    img.style.objectFit = "contain";
-    img.style.objectPosition = "left top";
-  }
-}
-
-function startCharacterLayoutWatch(){
-  stopCharacterLayoutWatch();
-  updateCharacterLayout();
-  characterLayoutTimer = setInterval(()=>{
-    updateCharacterLayout();
-  }, 120);
-}
-
-function stopCharacterLayoutWatch(){
-  if(characterLayoutTimer){
-    clearInterval(characterLayoutTimer);
-    characterLayoutTimer = null;
-  }
-}
-
-window.addEventListener("resize", updateCharacterLayout);
-window.addEventListener("orientationchange", ()=>{
-  setTimeout(updateCharacterLayout, 120);
-});
-
 function getCharUrlBySpeaker(item){
   if(!resourcePack.loaded) return null;
   if(item.charKey){
@@ -630,7 +601,6 @@ function setCharacter(item){
   img.src = imgUrl;
   img.onload = ()=>{
     charLayerDom.appendChild(img);
-    startCharacterLayoutWatch();
   };
 }
 function getVoiceUrlByIndex(idx){
@@ -713,7 +683,6 @@ function startScene(id){
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
-  startCharacterLayoutWatch();
 }
 function startSceneFromBegin(id){
   sceneId = id;
@@ -733,7 +702,6 @@ function startSceneFromBegin(id){
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
-  startCharacterLayoutWatch();
 }
 function resumeScene(){
   const p = loadProgress();
@@ -755,13 +723,6 @@ function exitStory(){
   document.getElementById("bgmPlayBtn").style.display = "none";
   clearBgLayer();
   clearCharacterImage();
-  stopCharacterLayoutWatch();
-
-  const layer = document.getElementById("charLayer");
-  if(layer){
-    layer.style.height = "";
-    layer.style.width = "";
-  }
 
   document.getElementById("storyPage").classList.remove("active");
   document.getElementById("menuPage").classList.add("active");
@@ -775,7 +736,6 @@ function render(){
   if(index >= sceneData.content.length){
     box.innerHTML = `<div class='narration'>${dict.storyEnd}</div>`;
     document.getElementById("nextBtn").style.display = "none";
-    updateCharacterLayout();
     return;
   }
   const item = sceneData.content[index];
@@ -799,7 +759,6 @@ function render(){
     document.getElementById("nextBtn").style.display = "none";
   }
   saveProgress();
-  updateCharacterLayout();
 }
 function next(){
   index++;
