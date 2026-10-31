@@ -65,11 +65,15 @@ button:active{background:#2857b0;}
   overflow:hidden;
 }
 .character-layer img{
+  position:absolute;
+  left:0;
+  top:0;
   width:100%;
   height:auto;
   min-height:80px;
+  max-height:70vh;
   object-fit:contain;
-  object-position:left bottom;
+  object-position:left top;
   display:block;
 }
 
@@ -345,6 +349,7 @@ const uiLocale = {
 };
 let currentLang = "zh";
 let scenes = {};
+let characterLayoutTimer = null;
 
 function renderSceneButtons(){
   const continueWrap = document.getElementById("continueBtnWrap");
@@ -539,8 +544,8 @@ function initBgLayer(){
   bgLayer.style.zIndex = "-1";
   bgLayer.style.backgroundSize = "cover";
   bgLayer.style.backgroundPosition = "center";
-  bgLayer.style.backgroundRepeat = "no-repeat";
-  bgLayer.style.transition = "background-image 0.3s ease";
+  bgLayer.style.backgroundRepeat = "no‑repeat";
+  bgLayer.style.transition = "background‑image 0.3s ease";
   document.body.appendChild(bgLayer);
 }
 function clearBgLayer(){
@@ -557,19 +562,18 @@ function updateCharacterLayout(){
   const layer = document.getElementById("charLayer");
   if(!box || !layer) return;
 
-  if(document.getElementById("storyPage").classList.contains("active") === false){
+  if(!document.getElementById("storyPage").classList.contains("active")){
     layer.style.height = "";
+    layer.style.width = "";
     return;
   }
 
   const boxRect = box.getBoundingClientRect();
-  let boxTop = boxRect.top;
+  let layerHeight = Math.max(120, boxRect.top - 10);
 
-  if(boxTop < 150){
-    boxTop = window.innerHeight - 280;
+  if(window.innerWidth > window.innerHeight){
+    layerHeight = Math.min(layerHeight, window.innerHeight * 0.55);
   }
-
-  const layerHeight = Math.max(120, boxTop - 10);
 
   layer.style.height = layerHeight + "px";
   layer.style.width = "42vw";
@@ -581,9 +585,25 @@ function updateCharacterLayout(){
     img.style.height = "auto";
     img.style.width = "100%";
     img.style.objectFit = "contain";
-    img.style.objectPosition = "left bottom";
+    img.style.objectPosition = "left top";
   }
 }
+
+function startCharacterLayoutWatch(){
+  stopCharacterLayoutWatch();
+  updateCharacterLayout();
+  characterLayoutTimer = setInterval(()=>{
+    updateCharacterLayout();
+  }, 120);
+}
+
+function stopCharacterLayoutWatch(){
+  if(characterLayoutTimer){
+    clearInterval(characterLayoutTimer);
+    characterLayoutTimer = null;
+  }
+}
+
 window.addEventListener("resize", updateCharacterLayout);
 window.addEventListener("orientationchange", ()=>{
   setTimeout(updateCharacterLayout, 120);
@@ -610,8 +630,7 @@ function setCharacter(item){
   img.src = imgUrl;
   img.onload = ()=>{
     charLayerDom.appendChild(img);
-    updateCharacterLayout();
-    setTimeout(updateCharacterLayout,150);
+    startCharacterLayoutWatch();
   };
 }
 function getVoiceUrlByIndex(idx){
@@ -694,8 +713,7 @@ function startScene(id){
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
-  setTimeout(updateCharacterLayout, 50);
-  setTimeout(updateCharacterLayout, 220);
+  startCharacterLayoutWatch();
 }
 function startSceneFromBegin(id){
   sceneId = id;
@@ -715,8 +733,7 @@ function startSceneFromBegin(id){
   saveProgress();
   render();
   playSegmentVoiceByIndex(index);
-  setTimeout(updateCharacterLayout, 50);
-  setTimeout(updateCharacterLayout, 220);
+  startCharacterLayoutWatch();
 }
 function resumeScene(){
   const p = loadProgress();
@@ -738,6 +755,7 @@ function exitStory(){
   document.getElementById("bgmPlayBtn").style.display = "none";
   clearBgLayer();
   clearCharacterImage();
+  stopCharacterLayoutWatch();
 
   const layer = document.getElementById("charLayer");
   if(layer){
@@ -772,9 +790,9 @@ function render(){
     document.getElementById("nextBtn").style.display = "block";
     setCharacter(item);
   }else if(item.type === "choice"){
-    let html = `<div>${dict.textPleaseChoose}</div><div class="choice-area">`;
+    let html = `<div>${dict.textPleaseChoose}</div><div class="choice‑area">`;
     item.options.forEach(opt=>{
-      html += `<button class="choice-btn" onclick="selectChoice('${opt.key}')">${opt.text}</button>`;
+      html += `<button class="choice‑btn" onclick="selectChoice('${opt.key}')">${opt.text}</button>`;
     })
     html += `</div>`;
     box.innerHTML = html;
@@ -869,7 +887,7 @@ async function loadResourceZip(inputEl){
       const fontFace = new FontFace("CustomStoryFont", `url(${fontUrl})`);
       await fontFace.load();
       document.fonts.add(fontFace);
-      document.body.style.fontFamily = "CustomStoryFont, system-ui, sans‑serif";
+      document.body.style.fontFamily = "CustomStoryFont, system‑ui, sans‑serif";
     }
     alert(dict.tipZipSuccess.replace("{count}",allFileKeys.length));
   }catch(err){
