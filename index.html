@@ -67,6 +67,7 @@ button:active{background:#2857b0;}
 .character-layer img{
   width:100%;
   height:auto;
+  min-height:80px;
   object-fit:contain;
   object-position:left bottom;
   display:block;
@@ -551,14 +552,23 @@ function clearCharacterImage(){
   charLayerDom.innerHTML = "";
 }
 
-// ========== 立绘动态布局（跟随storyBox顶部） ==========
 function updateCharacterLayout(){
   const box = document.getElementById("storyBox");
   const layer = document.getElementById("charLayer");
   if(!box || !layer) return;
 
+  if(document.getElementById("storyPage").classList.contains("active") === false){
+    layer.style.height = "";
+    return;
+  }
+
   const boxRect = box.getBoundingClientRect();
-  const boxTop = boxRect.top;
+  let boxTop = boxRect.top;
+
+  if(boxTop < 150){
+    boxTop = window.innerHeight - 280;
+  }
+
   const layerHeight = Math.max(120, boxTop - 10);
 
   layer.style.height = layerHeight + "px";
@@ -567,6 +577,7 @@ function updateCharacterLayout(){
   const img = layer.querySelector("img");
   if(img){
     img.style.maxHeight = layerHeight + "px";
+    img.style.minHeight = "80px";
     img.style.height = "auto";
     img.style.width = "100%";
     img.style.objectFit = "contain";
@@ -600,6 +611,7 @@ function setCharacter(item){
   img.onload = ()=>{
     charLayerDom.appendChild(img);
     updateCharacterLayout();
+    setTimeout(updateCharacterLayout,150);
   };
 }
 function getVoiceUrlByIndex(idx){
@@ -683,6 +695,7 @@ function startScene(id){
   render();
   playSegmentVoiceByIndex(index);
   setTimeout(updateCharacterLayout, 50);
+  setTimeout(updateCharacterLayout, 220);
 }
 function startSceneFromBegin(id){
   sceneId = id;
@@ -703,6 +716,7 @@ function startSceneFromBegin(id){
   render();
   playSegmentVoiceByIndex(index);
   setTimeout(updateCharacterLayout, 50);
+  setTimeout(updateCharacterLayout, 220);
 }
 function resumeScene(){
   const p = loadProgress();
@@ -724,6 +738,13 @@ function exitStory(){
   document.getElementById("bgmPlayBtn").style.display = "none";
   clearBgLayer();
   clearCharacterImage();
+
+  const layer = document.getElementById("charLayer");
+  if(layer){
+    layer.style.height = "";
+    layer.style.width = "";
+  }
+
   document.getElementById("storyPage").classList.remove("active");
   document.getElementById("menuPage").classList.add("active");
   loadProgress();
