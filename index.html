@@ -55,14 +55,12 @@ button{
 }
 button:active{background:#2857b0;}
 .character-layer{
-  position:fixed;
-  left:0;
-  top:0;
-  width:46vw;
-  max-height: calc(100vh - 260px);
-  z-index:5;
-  pointer-events:none;
-  overflow:hidden;
+  position: fixed;
+  left: 12px;
+  top: 8px;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
 }
 .character-layer img{
   width:100%;
@@ -342,12 +340,10 @@ const uiLocale = {
 };
 let currentLang = "zh";
 let scenes = {};
-
 function renderSceneButtons(){
   const continueWrap = document.getElementById("continueBtnWrap");
   const restartWrap = document.getElementById("restartBtnWrap");
   console.log("continueWrap", continueWrap, "scenes", scenes);
-
   if (!continueWrap || !restartWrap) {
     console.error("找不到按钮容器 continueBtnWrap / restartBtnWrap");
     return;
@@ -356,11 +352,9 @@ function renderSceneButtons(){
     continueWrap.innerHTML = "<div class='tip'>剧本数据未加载</div>";
     return;
   }
-
   continueWrap.innerHTML = "";
   restartWrap.innerHTML = "";
   const dict = uiLocale[currentLang];
-
   const sceneKeys = Object.keys(scenes)
     .filter(k => k.startsWith("scene"))
     .sort((a,b)=>{
@@ -368,13 +362,11 @@ function renderSceneButtons(){
       const n2 = Number(b.replace("scene",""));
       return n1 - n2;
     });
-
   console.log("识别到的幕列表", sceneKeys);
   if(sceneKeys.length === 0){
     continueWrap.innerHTML = "<div class='tip'>未检测到任何scene剧本</div>";
     return;
   }
-
   for(const sid of sceneKeys){
     const sceneItem = scenes[sid];
     const titleText = sceneItem?.title || sid;
@@ -382,7 +374,6 @@ function renderSceneButtons(){
     btnContinue.textContent = `${titleText}${dict.suffixContinue}`;
     btnContinue.onclick = ()=> startScene(sid);
     continueWrap.appendChild(btnContinue);
-
     const btnRestart = document.createElement("button");
     btnRestart.className = "restart-btn";
     btnRestart.textContent = `${titleText}${dict.suffixRestart}`;
@@ -390,7 +381,6 @@ function renderSceneButtons(){
     restartWrap.appendChild(btnRestart);
   }
 }
-
 function detectBrowserLanguage(){
   const navLang = navigator.language || navigator.userLanguage;
   if(navLang.startsWith("zh")) return "zh";
@@ -398,11 +388,9 @@ function detectBrowserLanguage(){
   if(navLang.startsWith("ja")) return "ja";
   return "zh";
 }
-
 async function onLangSelectChange(newLang){
   await changeLanguage(newLang);
 }
-
 function applyUiLocale(){
   const dict = uiLocale[currentLang];
   document.querySelectorAll("[data-ui-key]").forEach(el=>{
@@ -417,7 +405,6 @@ function applyUiLocale(){
   iosTipDom.innerText = dict.tipIos;
   document.getElementById("langSelect").value = currentLang;
 }
-
 async function loadSceneJson(lang){
   try{
     const res = await fetch(`scenes_${lang}.json`);
@@ -434,24 +421,20 @@ async function loadSceneJson(lang){
     await loadSceneJson("zh");
   }
 }
-
 async function changeLanguage(newLang){
   currentLang = newLang;
   await loadSceneJson(newLang);
   applyUiLocale();
   renderSceneButtons();
-
   if(document.getElementById("storyPage").classList.contains("active")){
     render();
   }
-
   if(isIOS){
     setCookie("ui_lang", newLang);
   }else{
     localStorage.setItem("ui_lang", newLang);
   }
 }
-
 let sceneId = null;
 let sceneData = null;
 let index = 0;
@@ -471,7 +454,6 @@ if(isIOS){
 }
 const BGM_NORMAL_VOLUME = 0.7;
 const BGM_DUCK_VOLUME = 0.25;
-
 function setCookie(name,value,days=365){
   let d = new Date();
   d.setTime(d.getTime() + (days*24*60*60*1000));
@@ -548,6 +530,33 @@ function clearBgLayer(){
 function clearCharacterImage(){
   charLayerDom.innerHTML = "";
 }
+
+// 自动适配立绘容器尺寸，避免被剧情框截断
+function updateCharacterLayer() {
+  const storyBox = document.getElementById('storyBox');
+  if (!charLayerDom || !storyBox) return;
+
+  // 边距配置，可按需调整
+  const TOP_GAP = 8;          // 顶部留白距离
+  const LEFT_GAP = 12;        // 左侧安全边距
+  const MAX_WIDTH_RATIO = 0.5;// 最大宽度占屏幕比例
+  const STORY_BOX_BOTTOM = 20;// 剧情框距底部距离，与CSS保持一致
+
+  const viewportW = window.innerWidth;
+  const viewportH = window.innerHeight;
+
+  // 计算剧情框顶部的Y坐标
+  const storyBoxTop = viewportH - storyBox.offsetHeight - STORY_BOX_BOTTOM;
+
+  // 计算可用的最大宽高
+  const availableHeight = storyBoxTop - TOP_GAP;
+  const availableWidth = viewportW * MAX_WIDTH_RATIO - LEFT_GAP;
+
+  // 应用到容器
+  charLayerDom.style.width = availableWidth + 'px';
+  charLayerDom.style.height = availableHeight + 'px';
+}
+
 function getCharUrlBySpeaker(item){
   if(!resourcePack.loaded) return null;
   if(item.charKey){
@@ -694,6 +703,7 @@ function render(){
   if(index >= sceneData.content.length){
     box.innerHTML = `<div class='narration'>${dict.storyEnd}</div>`;
     document.getElementById("nextBtn").style.display = "none";
+    updateCharacterLayer();
     return;
   }
   const item = sceneData.content[index];
@@ -717,6 +727,7 @@ function render(){
     document.getElementById("nextBtn").style.display = "none";
   }
   saveProgress();
+  updateCharacterLayer();
 }
 function next(){
   index++;
@@ -812,7 +823,6 @@ async function loadResourceZip(inputEl){
     alert(dict.tipZipLoadFail + err.message);
   }
 }
-
 document.addEventListener("DOMContentLoaded", async function(){
   let savedLang;
   if(isIOS){
@@ -825,11 +835,11 @@ document.addEventListener("DOMContentLoaded", async function(){
   }else{
     currentLang = detectBrowserLanguage();
   }
-
   await loadSceneJson(currentLang);
   applyUiLocale();
   renderSceneButtons();
   loadProgress();
+  window.addEventListener('resize', updateCharacterLayer);
 })
 </script>
 </body>
