@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>星纹叙事台 Stellar‑Weave Stage 星紋叙事ステージ</title>
+<title>星纹叙事台 Stellar-Weave Stage</title>
 <script src="./jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -12,7 +12,7 @@ html,body{
   font-size:17px;
 }
 body{
-  font-family: system-ui, -apple-system, "Microsoft Yahei", sans-serif;
+  font-family: system-ui,-apple-system, "Microsoft Yahei", sans-serif;
   background:#ffffff;
   color:#222222;
   padding:20px;
@@ -38,9 +38,15 @@ body{
   display:flex;
   gap:10px;
   justify-content:center;
-  margin-bottom:20px;
+  margin-bottom:8px;
   flex-wrap:wrap;
   align-items:center;
+}
+.tip-small{
+  text-align:center;
+  font-size:14px;
+  color:#777;
+  margin-bottom:20px;
 }
 button{
   padding:12px 20px;
@@ -186,8 +192,14 @@ button:active{background:#2857b0;}
 .import-export-btn:active{
   background:#1b7cae;
 }
+/* iOS修复文件input，禁止display:none */
 .file-input{
-  display:none;
+  opacity:0;
+  position:absolute;
+  width:1px;
+  height:1px;
+  pointer-events:none;
+  overflow:hidden;
 }
 select.lang-select{
   font-size:17px;
@@ -219,7 +231,6 @@ select.lang-select{
     <button id="fullBtn" onclick="toggleFull()" data-ui-key="btnFull"></button>
     <button id="clearSaveBtn" onclick="clearSave()" data-ui-key="btnClearSave"></button>
   </div>
-  <!-- 自动渲染幕按钮容器，HTML永远不需要修改 -->
   <div class="btns" id="continueBtnWrap"></div>
   <div class="btns" id="restartBtnWrap"></div>
   <div class="btns">
@@ -231,7 +242,10 @@ select.lang-select{
     <input class="file-input" type="file" id="saveImport" accept=".txt" onchange="importSave(this)">
     <button class="import-export-btn" onclick="document.getElementById('zipUpload').click()" data-ui-key="btnLoadZip"></button>
     <input class="file-input" type="file" id="zipUpload" accept=".zip" onchange="loadResourceZip(this)">
+    <!-- 打开资源编辑器，新开标签页 -->
+    <button class="import-export-btn" onclick="window.open('./res-editor.html','_blank')" data-ui-key="btnOpenResEditor"></button>
   </div>
+  <div class="tip-small" data-ui-key="tipResEditorNote"></div>
   <div class="tip" id="saveTip"></div>
   <div class="copyright" data-ui-key="copyright"></div>
 </div>
@@ -256,10 +270,12 @@ const uiLocale = {
     btnExport:"导出存档",
     btnImport:"导入存档",
     btnLoadZip:"加载资源包ZIP",
+    btnOpenResEditor:"打开资源包编辑器",
+    tipResEditorNote:"💡编辑器会打开新标签页；制作完成下载ZIP，回到本页面手动加载文件。",
     btnExitFull:"退出全屏",
     btnExitStory:"退出剧情",
     btnBgm:"开启背景音乐",
-    tipIos:"由于苹果限制，部分安卓有的功能无法使用",
+    tipIos:"由于苹果限制，部分安卓有的功能无法使用；上传文件请把文件保存到「在我的iPhone」目录",
     tipNoSave:"没有存档",
     tipParseFail:"存档文件解析失败",
     tipImportOk:"存档导入成功！",
@@ -287,10 +303,12 @@ const uiLocale = {
     btnExport:"Export Save",
     btnImport:"Import Save",
     btnLoadZip:"Load Resource ZIP",
+    btnOpenResEditor:"Open Resource Editor",
+    tipResEditorNote:"💡Editor opens new tab; download zip and manually load back on this page.",
     btnExitFull:"Exit Fullscreen",
     btnExitStory:"Exit Story",
     btnBgm:"Turn On BGM",
-    tipIos:"Due to iOS limitations, some Android‑only features unavailable",
+    tipIos:"Due to iOS limitations, some Android-only features unavailable. Put files to 'On My iPhone'.",
     tipNoSave:"No save file",
     tipParseFail:"Failed to parse save file",
     tipImportOk:"Save imported successfully!",
@@ -300,7 +318,7 @@ const uiLocale = {
     tipJsonLoadFail:"File {fileName} load failed, fallback to Chinese\n{errMsg}",
     textPleaseChoose:"Please choose:",
     storyEnd:"Story complete.",
-    copyright:"Created by qiaoqiu072 & Ling. Beta0.5, for personal entertainment only. Non‑commercial.",
+    copyright:"Created by qiaoqiu072 & Ling. Beta0.5, for personal entertainment only. Non-commercial.",
     langLabel:"Language:",
     langZh:"中文",
     langEn:"English",
@@ -318,10 +336,12 @@ const uiLocale = {
     btnExport:"セーブ出力",
     btnImport:"セーブ読込",
     btnLoadZip:"リソースZIP読込",
+    btnOpenResEditor:"リソースエディタを開く",
+    tipResEditorNote:"💡エディタは新しいタブで開きます；ZIPをダウンロード後、こちらのページで手動読み込みしてください。",
     btnExitFull:"フルスクリーン解除",
     btnExitStory:"シナリオ終了",
     btnBgm:"BGMオン",
-    tipIos:"iOS制限によりAndroid機能の一部が使用不可",
+    tipIos:"iOS制限によりAndroid機能の一部が使用不可。ファイルは「このiPhone内」に保存してください。",
     tipNoSave:"セーブデータがありません",
     tipParseFail:"セーブ解析失敗",
     tipImportOk:"セーブインポート完了",
@@ -530,33 +550,21 @@ function clearBgLayer(){
 function clearCharacterImage(){
   charLayerDom.innerHTML = "";
 }
-
-// 自动适配立绘容器尺寸，避免被剧情框截断
 function updateCharacterLayer() {
   const storyBox = document.getElementById('storyBox');
   if (!charLayerDom || !storyBox) return;
-
-  // 边距配置，可按需调整
-  const TOP_GAP = 8;          // 顶部留白距离
-  const LEFT_GAP = 12;        // 左侧安全边距
-  const MAX_WIDTH_RATIO = 0.5;// 最大宽度占屏幕比例
-  const STORY_BOX_BOTTOM = 20;// 剧情框距底部距离，与CSS保持一致
-
+  const TOP_GAP = 8;
+  const LEFT_GAP = 12;
+  const MAX_WIDTH_RATIO = 0.5;
+  const STORY_BOX_BOTTOM = 20;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-
-  // 计算剧情框顶部的Y坐标
   const storyBoxTop = viewportH - storyBox.offsetHeight - STORY_BOX_BOTTOM;
-
-  // 计算可用的最大宽高
   const availableHeight = storyBoxTop - TOP_GAP;
   const availableWidth = viewportW * MAX_WIDTH_RATIO - LEFT_GAP;
-
-  // 应用到容器
   charLayerDom.style.width = availableWidth + 'px';
   charLayerDom.style.height = availableHeight + 'px';
 }
-
 function getCharUrlBySpeaker(item){
   if(!resourcePack.loaded) return null;
   if(item.charKey){
@@ -700,6 +708,22 @@ function render(){
   box.innerHTML = "";
   clearCharacterImage();
   const dict = uiLocale[currentLang];
+
+  //====自定义对话框背景 强制16:5====
+  if(resourcePack.loaded && resourcePack.map?.global?.dialogBoxBg){
+    const dbgUrl = resourcePack.files[resourcePack.map.global.dialogBoxBg];
+    if(dbgUrl){
+      box.style.backgroundImage = `url(${dbgUrl})`;
+      box.style.backgroundSize = "100% 100%";
+      box.style.backgroundPosition = "center";
+      box.style.backgroundRepeat = "no-repeat";
+      box.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,0.12), 0 4px 20px rgba(0,0,0,0.25)";
+    }
+  }else{
+    box.style.backgroundImage = "";
+    box.style.boxShadow = "0 4px 20px rgba(0,0,0,0.25)";
+  }
+
   if(index >= sceneData.content.length){
     box.innerHTML = `<div class='narration'>${dict.storyEnd}</div>`;
     document.getElementById("nextBtn").style.display = "none";
@@ -784,6 +808,7 @@ function importSave(inputEl){
     }
   }
   reader.readAsText(file);
+  inputEl.value = "";
 }
 async function loadResourceZip(inputEl){
   const file = inputEl.files[0];
@@ -809,19 +834,37 @@ async function loadResourceZip(inputEl){
       }
     }
     resourcePack.loaded = true;
+
+    //校验对话框背景强制16:5，允许±3%误差
+    if(resourcePack.map?.global?.dialogBoxBg){
+      const dbgPath = resourcePack.map.global.dialogBoxBg;
+      const imgObj = new Image();
+      imgObj.src = resourcePack.files[dbgPath];
+      imgObj.onload = ()=>{
+        const ratio = imgObj.width / imgObj.height;
+        const target = 16.0 / 5.0;
+        const eps = 0.03;
+        if(Math.abs(ratio-target) > eps){
+          alert(`对话框背景图片比例必须16:5，当前 ${imgObj.width}:${imgObj.height}，该背景将被忽略`);
+          delete resourcePack.map.global.dialogBoxBg;
+        }
+      }
+    }
+
     const fontPath = resourcePack.map.global?.fontPath;
     if(fontPath && resourcePack.files[fontPath]){
       const fontUrl = resourcePack.files[fontPath];
       const fontFace = new FontFace("CustomStoryFont", `url(${fontUrl})`);
       await fontFace.load();
       document.fonts.add(fontFace);
-      document.body.style.fontFamily = "CustomStoryFont, system-ui, sans‑serif";
+      document.body.style.fontFamily = "CustomStoryFont, system-ui, sans-serif";
     }
     alert(dict.tipZipSuccess.replace("{count}",allFileKeys.length));
   }catch(err){
     console.error(err);
     alert(dict.tipZipLoadFail + err.message);
   }
+  inputEl.value = "";
 }
 document.addEventListener("DOMContentLoaded", async function(){
   let savedLang;
