@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title data-editor-key="title">自制资源包编辑器 Res-Pack Maker</title>
+<script src="./jszip.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-size:16px;font-family:system-ui,-apple-system,Microsoft Yahei,sans-serif;}
+body{padding:16px;max-width:1200px;margin:0 auto;background:#f7f8fa;color:#222;}
+h1{margin-bottom:12px;font-size:22px;text-align:center;}
+.panel{background:#fff;border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.panel-title{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:bold;font-size:17px;}
+.btn-add{padding:6px 12px;border:none;border-radius:6px;background:#366ed8;color:#fff;cursor:pointer;font-size:16px;}
+.btn-add:active{background:#2857b0;}
+.row-item{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #eee;}
+select,input[type="file"]{padding:6px 8px;border-radius:6px;border:1px solid #ccc;font-size:15px;}
+.btn{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:14px;}
+.btn-draw{background:#22aa66;color:#fff;}
+.btn-upload{background:#366ed8;color:#fff;}
+.btn-del{background:#dd4444;color:#fff;}
+.btn-dl{background:#9055cc;color:#fff;}
+.btn-record{background:#44bb22;color:#fff;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.action-bar{text-align:center;margin:20px 0;}
+#genZipBtn{padding:12px 24px;font-size:18px;background:#366ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;}
+
+.draw-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:none;flex-direction:column;}
+.draw-modal.active{display:flex;}
+.draw-dock{display:flex;gap:4px;padding:6px;background:#222;overflow-x:auto;flex-shrink:0;}
+.draw-dock button{flex-shrink:0;padding:4px 8px;font-size:12px;border:none;border-radius:4px;background:#444;color:#fff;cursor:pointer;min-width:52px;}
+.draw-dock button.active{background:#3688ff;}
+.draw-dock input[type="range"]{width:70px;}
+.draw-canvas-wrap{flex-grow:1;position:relative;overflow:hidden;}
+#drawCanvas{position:absolute;top:0;left:0;transform-origin:0 0;background:#ffffff;}
+.draw-bottom-bar{display:flex;gap:8px;padding:8px;background:#222;}
+.draw-bottom-bar button{padding:6px 12px;font-size:14px;border-none;border-radius:4px;}
+
+.file-hint{font-size:13px;color:#666;}
+/* iOS修复文件input */
+.file-input{
+  opacity:0;
+  position:absolute;
+  width:1px;
+  height:1px;
+  pointer-events:none;
+  overflow:hidden;
+}
+.lang-bar{text-align:center;margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;}
+.lang-bar select{font-size:16px;}
+</style>
+</head>
+<body>
+
+<div class="lang-bar">
+  <label data-editor-key="langLabel"></label>
+  <select id="editorLangSel">
+    <option value="zh"></option>
+    <option value="en"></option>
+    <option value="ja"></option>
+  </select>
+  <button id="reloadSceneJsonBtn" data-editor-key="btnReloadScene"></button>
+</div>
+
+<h1 data-editor-key="title"></h1>
+
+<div class="panel">
+  <div class="panel-title">
+    <span data-editor-key="panelChar">🖼️立绘资源</span>
+    <button class="btn-add" id="addCharRow" data-editor-key="btnAdd">+ 添加条目</button>
+  </div>
+  <div id="charRows"></div>
+  <div class="file-hint" data-editor-key="hintChar"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span data-editor-key="panelFont">🔤全局字体</span>
+    <button class="btn-add" id="addFontRow" data-editor-key="btnAdd">+ 添加字体</button>
+  </div>
+  <div id="fontRows"></div>
+  <div class="file-hint" data-editor-key="hintFont"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span data-editor-key="panelVoice">🔊段落语音</span>
+    <button class="btn-add" id="addVoiceRow" data-editor-key="btnAdd">+ 添加条目</button>
+  </div>
+  <div id="voiceRows"></div>
+  <div class="file-hint" data-editor-key="hintVoice"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span data-editor-key="panelBgm">🎵每幕BGM</span>
+    <button class="btn-add" id="addBgmRow" data-editor-key="btnAdd">+ 添加条目</button>
+  </div>
+  <div id="bgmRows"></div>
+  <div class="file-hint" data-editor-key="hintBgm"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span data-editor-key="panelBg">🏞️幕背景图</span>
+    <button class="btn-add" id="addBgRow" data-editor-key="btnAdd">+ 添加条目</button>
+  </div>
+  <div id="bgRows"></div>
+  <div class="file-hint" data-editor-key="hintBg"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title"><span data-editor-key="panelDialogBg">💬对话框自定义背景(强制16:5)</span></div>
+  <div id="dialogBoxRow" class="row-item">
+    <button class="btn btn-upload" id="uploadDialogBg" data-editor-key="btnUpload">上传图片</button>
+    <button class="btn btn-draw" id="drawDialogBg" data-editor-key="btnDraw">手绘</button>
+    <button class="btn btn-dl" id="dlDialogBg" data-editor-key="btnDownload" disabled>下载</button>
+    <span class="file-hint" data-editor-key="hintDialogBg"></span>
+    <input type="file" id="fileDialogBg" class="file-input" accept=".png,.jpg,.jpeg">
+  </div>
+</div>
+
+<div class="action-bar">
+  <button id="genZipBtn" data-editor-key="btnGenZip">生成 ResPack.zip (下载)</button>
+  <div class="file-hint" style="margin-top:8px" data-editor-key="hintGenZip"></div>
+</div>
+
+<div class="draw-modal" id="drawModal">
+  <div class="draw-dock">
+    <button data-tool="pen" data-editor-key="drawPen">水笔</button>
+    <button data-tool="brush" data-editor-key="drawBrush">毛刷</button>
+    <button data-tool="highlighter" data-editor-key="drawHighlighter">荧光笔</button>
+    <button data-tool="eraser" data-editor-key="drawEraser">橡皮</button>
+    <button data-tool="clear" data-editor-key="drawClear">清空画布</button>
+    <button data-tool="undo" data-editor-key="drawUndo">撤销</button>
+    <button data-tool="redo" data-editor-key="drawRedo">重做</button>
+    <div><span data-editor-key="drawHue">色相:</span><input type="range" id="hueSlider" min="0" max="360" value="0"></div>
+    <div><span data-editor-key="drawSat">饱和度:</span><input type="range" id="satSlider" min="0" max="100" value="100"></div>
+    <div><span data-editor-key="drawLum">明度:</span><input type="range" id="lumSlider" min="0" max="100" value="50"></div>
+    <div><span data-editor-key="drawScale">缩放:</span><input type="range" id="scaleSlider" min="25" max="300" value="100"></div>
+  <div id="colorPreviewBox" style="width:34px;height:34px;border:2px solid #fff;border-radius:4px;background:#000;"></div>
+  </div>
+  <div class="draw-canvas-wrap">
+    <canvas id="drawCanvas"></canvas>
+  </div>
+  <div class="draw-bottom-bar">
+    <button id="drawOkBtn" data-editor-key="drawOk">确定导出JPG</button>
+    <button id="drawCancelBtn" data-editor-key="drawCancel">取消</button>
+  </div>
+</div>
+
+<script src="./res-pack-editor.js"></script>
+</body>
+</html>
